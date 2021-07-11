@@ -1,14 +1,15 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Dev CI/CD
+name: Prod CI/CD
 
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ dev ]
+  # push:
+  #   branches: [ dev ]
   pull_request:
-    branches: [ dev ]
+    types: [closed]
+    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -16,25 +17,90 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains jobs
-  #build the app
-  buildBeforeTest:
+  dockerHub:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
+
+    # only if pull request merge was approved
+    if: github.event.pull_request.merged == true 
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checks-out Repo
+      - name: checkout repo
         uses: actions/checkout@v2
+
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+      
+      # build the docker image:
+      # this correspong to doing this: docker build . -t hr-app:v1.0.0 
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
+      - name: Login to docker
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: push docker image to docker hub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/kt-front-end:v1.0.0.0
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+     
+  # deploy the live application      
+  firebase_deploy:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # only if pull request is merged
+    if: github.event.pull_request.merged == true 
+
+    # create app docker image first before deploying
+    needs: [dockerHub]
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: checkout repo
+        uses: actions/checkout@v2
+
+      # set up node 
       - name: Setup node
         uses: actions/setup-node@master
         with:
           node-version: '14.x'
 
-      # install applicaion dependencies and build
-      - name: Install Dependencies & build angular
+      # install applicaion dependencies
+      - name: Install Dependencies & angular
         run: |
           npm install
-          npm install -g @angular/cli 
-          npm run build
+          npm install -g @angular/cli
+
+      # run a set of build commands
+      - name: build
+        run: ng build --prod
+
+      # deply to firebase
+      - name: deploy to firebase
+        uses: w9jds/firebase-action@master  
+        with:
+          args: deploy --only hosting   
+        env: 
+          FIREBASE_TOKEN: ${{secrets.FIREBASE_TOKEN}}
+                
