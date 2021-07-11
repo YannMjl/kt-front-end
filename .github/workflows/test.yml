@@ -50,6 +50,8 @@ jobs:
 
     # test only if branche is test and pull request is approved or merged
     if: github.event.pull_request.merged == true
+
+    needs: [buildBeforeTestLinux]
       
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -77,6 +79,8 @@ jobs:
 
     # test only if branche is test and pull request is approved or merged
     if: github.event.pull_request.merged == true
+
+    needs: [buildBeforeTestWindows]
       
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
