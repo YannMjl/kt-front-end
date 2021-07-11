@@ -17,9 +17,53 @@ on:
 jobs:
   # This workflow contains jobs
   #build the app
-  buildBeforeTest:
+  buildBeforeTestLinux:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checks-out Repo
+        uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@master
+        with:
+          node-version: '14.x'
+
+      # install applicaion dependencies and build
+      - name: Install Dependencies & build angular
+        run: |
+          npm install
+          npm install -g @angular/cli 
+          npm run build
+
+  buildBeforeTestWindows:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/dev'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checks-out Repo
+        uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@master
+        with:
+          node-version: '14.x'
+
+      # install applicaion dependencies and build
+      - name: Install Dependencies & build angular
+        run: |
+          npm install
+          npm install -g @angular/cli 
+          npm run build
+
+  buildBeforeTestMacOS:
+    # The type of runner that the job will run on
+    runs-on: macos-latest
     if: github.ref == 'refs/heads/dev'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
