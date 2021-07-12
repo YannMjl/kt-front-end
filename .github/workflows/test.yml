@@ -49,7 +49,7 @@ jobs:
     runs-on: windows-latest
 
     # test only if branche is test and pull request is approved or merged
-    if: github.event.pull_request.merged == true
+    # if: github.event.pull_request.merged == true
 
     needs: [buildBeforeTestLinux]
       
@@ -78,7 +78,7 @@ jobs:
     runs-on: macos-latest
 
     # test only if branche is test and pull request is approved or merged
-    if: github.event.pull_request.merged == true
+    # if: github.event.pull_request.merged == true
 
     needs: [buildBeforeTestWindows]
       
